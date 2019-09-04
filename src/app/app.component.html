@@ -2,6 +2,7 @@
   <h1>Откройте csv файл и я вам помогу</h1>
 </div>
 <input type="file" #csvReader name="Upload CSV" id="txtFileUpload" (change)="uploadListener($event)"  accept=".csv" />
+<p>{{message}}</p>
 <div>
   <mat-form-field>
     <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Введите значение для фильтрации">
@@ -20,3 +21,4 @@
   </table>
   <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
 </div>
+

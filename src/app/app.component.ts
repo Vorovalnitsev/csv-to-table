@@ -13,6 +13,8 @@ import { MatSort } from '@angular/material/sort';
 
 export class AppComponent implements OnInit {
   title = 'csv-to-table';
+  // выводит сообщение об обработке или ошибке обработки файла
+  message = '';
   // хранит названия столбцов
   columns: string[] = [];
   // данные для отображения
@@ -31,7 +33,11 @@ export class AppComponent implements OnInit {
   uploadListener(event: any): void {
     let files = event.target.files;
     // проверка типа файла
-    if (files[0].name.endsWith('.csv') && files[0].type === 'text/csv') {
+    if (
+      files[0].name.endsWith('.csv')
+      && ( files[0].type === 'text/csv'
+      || files[0].type === 'application/vnd.ms-excel')
+      ) {
       this.data = [];
       // создаем объект FileReader для получения содержимого файла
       let reader = new FileReader();
@@ -48,13 +54,13 @@ export class AppComponent implements OnInit {
           for (let j = 0; j < row.length; j++) {
             obj[this.columns[j]] = row[j];
           }
-          console.log(obj);
           this.data.push(obj);
         }
-          console.log(this.data);
           this.dataSource.data = this.data;
-          console.log(this.dataSource.data);
+          this.message = 'Файл успешно загружен';
       };
+    } else {
+      this.message = 'Похоже что это не csv файл';
     }
   }
   applyFilter(filterValue: string) {
