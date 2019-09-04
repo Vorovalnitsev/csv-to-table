@@ -20,14 +20,13 @@ export class AppComponent implements OnInit {
   // данные для отображения
   data: Object[] = [];
   // источник данных для таблицы
-  dataSource = new MatTableDataSource<Object>(this.data);
+  dataSource: MatTableDataSource<Object>;
   // пагинация страниц
   @ViewChild(MatPaginator, {static: true}) paginator: MatPaginator;
   @ViewChild(MatSort, {static: true}) sort: MatSort;
   ngOnInit() {
     // добавляем к источнику данных пагинацию
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+
   }
   // функция обработчик события изменения формы с выбором файла
   uploadListener(event: any): void {
@@ -43,24 +42,60 @@ export class AppComponent implements OnInit {
       let reader = new FileReader();
       reader.readAsText(files[0]);
       reader.onload = () => {
-        // полученную информацию делим на строки
-        let rows: string[] = (<string>reader.result).split('\n');
-        // из первой строки получаем данные для заголовков столбцов 
-        this.columns = rows[0].split(',');
-        // из оставшихся строк получеам содержимое ячеек, собираем объект для строки таблицы и заносим его в data
-        for (let i = 1; i < rows.length - 1; i++) {
-          let row: string[] = rows[i].split(',');
-          let obj = new Object();
-          for (let j = 0; j < row.length; j++) {
-            obj[this.columns[j]] = row[j];
+
+        let objPattern = new RegExp(
+          (
+              // разделители строки и полей
+              '(\\,|\\r?\\n|\\r|^)' +
+              // поля в экранированных кавычках
+              '(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|' +
+              // стандартные разделители полей и строк
+              '([^\"\\,\\r\\n]*))'
+          ),
+          'gi'
+          );
+        let arrMatches;
+        // первая строка csv-файла - названия столбцов. пока isColumnsNameDone мы дсобираем назавния столбцов
+        let isColumnsNameDone = false;
+        let obj: Object;
+        let currentColum = 0;
+        this.columns = [];
+        while (arrMatches = objPattern.exec(<string>reader.result)) {
+          currentColum += 1;
+          let strMatchedDelimiter = arrMatches[ 1 ];
+          if (
+            strMatchedDelimiter.length &&
+            strMatchedDelimiter !== ','
+            ) {
+              if (isColumnsNameDone) {
+                this.data.push(obj);
+              }
+              isColumnsNameDone = true;
+              currentColum = 0;
+              obj = new Object();
           }
-          this.data.push(obj);
+          let strMatchedValue;
+          if (arrMatches[ 2 ]) {
+            strMatchedValue = arrMatches[ 2 ].replace(
+                    new RegExp( '\"\"', 'g' ),
+                    '\"'
+                    );
+            } else {
+                strMatchedValue = arrMatches[ 3 ];
+            }
+
+
+            if (isColumnsNameDone === false) {
+              this.columns.push(strMatchedValue);
+            } else {
+                obj[this.columns[currentColum]] = strMatchedValue;
+              }
+
         }
-          this.dataSource.data = this.data;
-          this.message = 'Файл успешно загружен';
+        this.dataSource = new MatTableDataSource<Object>(this.data);
+        this.dataSource.paginator = this.paginator;
+        this.dataSource.sort = this.sort;
       };
-    } else {
-      this.message = 'Похоже что это не csv файл';
     }
   }
   applyFilter(filterValue: string) {
